@@ -21,6 +21,17 @@ export class InputHandler {
         // Add mouse event listeners
         this.gameEngine.canvas.addEventListener('click', (e) => this.handleClick(e));
         this.gameEngine.canvas.style.cursor = 'pointer'; // Change cursor to indicate clickable
+        
+        // Add keyboard listener for camera controls
+        window.addEventListener('keydown', (e) => this.handleKeyDown(e));
+    }
+    
+    handleKeyDown(e) {
+        // Camera controls using keyboard for testing
+        if (e.code === 'KeyR') {
+            // Reset camera to player position
+            this.gameEngine.resetCamera();
+        }
     }
     
     handleClick(e) {
@@ -46,9 +57,9 @@ export class InputHandler {
     }
     
     screenToWorld(screenX, screenY) {
-        // Convert screen coordinates to isometric world coordinates
-        const cameraX = this.gameEngine.canvas.width / 2 - this.player.x * this.gameEngine.isometricRenderer.tileWidth / 2;
-        const cameraY = this.gameEngine.canvas.height / 2 - this.player.y * this.gameEngine.isometricRenderer.tileHeight / 2;
+        // Convert screen coordinates to isometric world coordinates using the camera position
+        const cameraX = this.gameEngine.canvas.width / 2 - this.gameEngine.camera.x * this.gameEngine.isometricRenderer.tileWidth / 2;
+        const cameraY = this.gameEngine.canvas.height / 2 - this.gameEngine.camera.y * this.gameEngine.isometricRenderer.tileHeight / 2;
         
         // Adjust screen coordinates to be relative to camera position
         const adjustedX = screenX - cameraX;

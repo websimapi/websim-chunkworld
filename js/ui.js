@@ -19,6 +19,9 @@ export class UI {
         // Setup coordinate toggle button
         this.createCoordinateToggle();
         
+        // Setup camera controls
+        this.createCameraControls();
+        
         // Setup instructions
         this.createInstructions();
         
@@ -167,6 +170,8 @@ export class UI {
             <h3 style="margin-bottom: 5px;">Controls:</h3>
             <p>Click on a tile to move there</p>
             <p>Your character will move one tile at a time</p>
+            <p>Press R to reset camera</p>
+            <p>The Camera Settings button lets you adjust how the camera follows you</p>
             <p>Explore the kingdom and interact with other players</p>
             <p>The world is automatically saved</p>
         `;
@@ -326,5 +331,128 @@ export class UI {
         setTimeout(() => {
             document.body.removeChild(messageElement);
         }, duration);
+    }
+    
+    createCameraControls() {
+        // Create camera controls panel
+        const cameraPanel = document.createElement('div');
+        cameraPanel.id = 'camera-controls';
+        cameraPanel.style.position = 'absolute';
+        cameraPanel.style.top = '40px';
+        cameraPanel.style.left = '10px';
+        cameraPanel.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        cameraPanel.style.padding = '10px';
+        cameraPanel.style.borderRadius = '5px';
+        cameraPanel.style.color = 'white';
+        cameraPanel.style.fontSize = '12px';
+        cameraPanel.style.zIndex = '100';
+        cameraPanel.style.display = 'none'; // Start hidden
+        
+        // Create header
+        const header = document.createElement('div');
+        header.textContent = 'Camera Controls';
+        header.style.fontWeight = 'bold';
+        header.style.marginBottom = '10px';
+        cameraPanel.appendChild(header);
+        
+        // Follow speed slider
+        this.createSlider(cameraPanel, 'Follow Speed', 0.1, 0, 1, 0.05, (value) => {
+            if (window.game && window.game.gameEngine) {
+                window.game.gameEngine.setCameraFollowSpeed(parseFloat(value));
+            }
+        });
+        
+        // Edge threshold slider
+        this.createSlider(cameraPanel, 'Edge Threshold', 0.3, 0.1, 0.49, 0.01, (value) => {
+            if (window.game && window.game.gameEngine) {
+                window.game.gameEngine.setCameraEdgeThreshold(parseFloat(value));
+            }
+        });
+        
+        // Reset camera button
+        const resetButton = document.createElement('button');
+        resetButton.textContent = 'Reset Camera';
+        resetButton.style.display = 'block';
+        resetButton.style.width = '100%';
+        resetButton.style.padding = '5px';
+        resetButton.style.margin = '10px 0 5px';
+        resetButton.style.backgroundColor = '#2196F3';
+        resetButton.style.border = 'none';
+        resetButton.style.borderRadius = '3px';
+        resetButton.style.color = 'white';
+        resetButton.style.cursor = 'pointer';
+        
+        resetButton.onclick = () => {
+            if (window.game && window.game.gameEngine) {
+                window.game.gameEngine.resetCamera();
+            }
+        };
+        
+        cameraPanel.appendChild(resetButton);
+        
+        // Create toggle button
+        const toggleButton = document.createElement('button');
+        toggleButton.textContent = 'Camera Settings';
+        toggleButton.style.position = 'absolute';
+        toggleButton.style.top = '10px';
+        toggleButton.style.left = '10px';
+        toggleButton.style.padding = '5px 10px';
+        toggleButton.style.backgroundColor = '#2196F3';
+        toggleButton.style.color = 'white';
+        toggleButton.style.border = 'none';
+        toggleButton.style.borderRadius = '3px';
+        toggleButton.style.cursor = 'pointer';
+        toggleButton.style.zIndex = '100';
+        
+        toggleButton.onclick = () => {
+            const panel = document.getElementById('camera-controls');
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+            } else {
+                panel.style.display = 'none';
+            }
+        };
+        
+        document.body.appendChild(cameraPanel);
+        document.body.appendChild(toggleButton);
+    }
+    
+    createSlider(parent, label, defaultValue, min, max, step, onChange) {
+        const container = document.createElement('div');
+        container.style.marginBottom = '5px';
+        
+        const labelElement = document.createElement('div');
+        labelElement.textContent = label;
+        container.appendChild(labelElement);
+        
+        const sliderContainer = document.createElement('div');
+        sliderContainer.style.display = 'flex';
+        sliderContainer.style.alignItems = 'center';
+        
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.min = min;
+        slider.max = max;
+        slider.step = step;
+        slider.value = defaultValue;
+        slider.style.flex = '1';
+        slider.style.margin = '0 10px 0 0';
+        
+        const valueDisplay = document.createElement('span');
+        valueDisplay.textContent = defaultValue;
+        valueDisplay.style.minWidth = '30px';
+        
+        slider.oninput = function() {
+            valueDisplay.textContent = this.value;
+            onChange(this.value);
+        };
+        
+        sliderContainer.appendChild(slider);
+        sliderContainer.appendChild(valueDisplay);
+        container.appendChild(sliderContainer);
+        
+        parent.appendChild(container);
+        
+        return slider;
     }
 }

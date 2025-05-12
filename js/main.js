@@ -51,6 +51,11 @@ class Game {
             // Show welcome message
             this.gameEngine.ui.showMessage('Welcome to ChunkWorld Kingdom!', 3000);
             
+            // Show camera info message after a short delay
+            setTimeout(() => {
+                this.gameEngine.ui.showMessage('The camera will follow you as you explore. Adjust settings with the Camera Settings button.', 5000);
+            }, 4000);
+            
             // Schedule a second chunk update after a short delay
             setTimeout(async () => {
                 await this.chunkSystem.update(this.player.x, this.player.y);
