@@ -16,7 +16,8 @@ class Game {
         this.chunkSystem = new ChunkSystem(this.networkManager);
         this.player = new Player();
         this.gameEngine = new GameEngine(this.canvas, this.ctx, this.chunkSystem, this.player, this.networkManager, this.ui);
-        // Pass the gameEngine to the inputHandler
+        
+        // Create input handler but defer initialization
         this.inputHandler = new InputHandler(this.player, this.gameEngine);
         
         window.addEventListener('resize', () => this.resize());
@@ -29,10 +30,16 @@ class Game {
     
     async initialize() {
         try {
+            // Initialize network and systems first
             await this.networkManager.initialize();
             await this.chunkSystem.initialize();
             this.player.initialize(this.networkManager);
             this.ui.initialize(this.networkManager);
+            
+            // Initialize input handler after game engine is ready
+            this.inputHandler.initialize();
+            
+            // Start the game engine last
             this.gameEngine.start();
             console.log('Game initialized successfully!');
             
