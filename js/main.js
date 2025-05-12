@@ -1,0 +1,52 @@
+import { GameEngine } from 'game-engine';
+import { ChunkSystem } from 'chunk-system';
+import { Player } from 'player';
+import { InputHandler } from 'input-handler';
+import { NetworkManager } from 'networking';
+import { UI } from 'ui';
+
+class Game {
+    constructor() {
+        this.canvas = document.getElementById('game-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.resize();
+        
+        this.ui = new UI();
+        this.networkManager = new NetworkManager();
+        this.chunkSystem = new ChunkSystem(this.networkManager);
+        this.player = new Player();
+        this.inputHandler = new InputHandler(this.player);
+        this.gameEngine = new GameEngine(this.canvas, this.ctx, this.chunkSystem, this.player, this.networkManager, this.ui);
+        
+        window.addEventListener('resize', () => this.resize());
+        
+        this.initialize();
+    }
+    
+    async initialize() {
+        try {
+            await this.networkManager.initialize();
+            await this.chunkSystem.initialize();
+            this.player.initialize(this.networkManager);
+            this.ui.initialize(this.networkManager);
+            this.gameEngine.start();
+            console.log('Game initialized successfully!');
+        } catch (error) {
+            console.error('Error initializing game:', error);
+        }
+    }
+    
+    resize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        // Update rendering if game is already running
+        if (this.gameEngine) {
+            this.gameEngine.handleResize();
+        }
+    }
+}
+
+// Start the game when the DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    const game = new Game();
+});
