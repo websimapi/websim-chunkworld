@@ -53,7 +53,7 @@ class Game {
             
             // Show camera info message after a short delay
             setTimeout(() => {
-                this.gameEngine.ui.showMessage('The camera will follow you as you explore. Adjust settings with the Camera Settings button.', 5000);
+                this.gameEngine.ui.showMessage('Click on tiles to move. The camera stays centered on your character.', 4000);
             }, 4000);
             
             // Schedule a second chunk update after a short delay

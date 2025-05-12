@@ -19,9 +19,6 @@ export class UI {
         // Setup coordinate toggle button
         this.createCoordinateToggle();
         
-        // Setup camera controls
-        this.createCameraControls();
-        
         // Setup instructions
         this.createInstructions();
         
@@ -170,8 +167,7 @@ export class UI {
             <h3 style="margin-bottom: 5px;">Controls:</h3>
             <p>Click on a tile to move there</p>
             <p>Your character will move one tile at a time</p>
-            <p>Press R to reset camera</p>
-            <p>The Camera Settings button lets you adjust how the camera follows you</p>
+            <p>The camera always stays centered on your character</p>
             <p>Explore the kingdom and interact with other players</p>
             <p>The world is automatically saved</p>
         `;
