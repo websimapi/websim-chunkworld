@@ -19,6 +19,7 @@ export class Player {
         this.lastStepTime = 0;
         this.stepSoundCooldown = 300; // ms
         this.currentRegion = null;
+        this.regionCheckReady = false;
 
         // Load sounds
         this.stepSound = new Audio('assets/step.wav');
@@ -45,12 +46,12 @@ export class Player {
         // Update initial position to network
         this.updateNetworkPosition();
 
-        // Get initial region
-        if (window.game && window.game.chunkSystem) {
-            const chunkX = Math.floor(this.x / window.game.chunkSystem.chunkSize);
-            const chunkY = Math.floor(this.y / window.game.chunkSystem.chunkSize);
-            this.currentRegion = window.game.chunkSystem.determineRegionType(chunkX, chunkY);
-        }
+        // Wait for chunks to load before checking region
+        setTimeout(() => {
+            this.regionCheckReady = true;
+            this.checkRegionChange(); // Initial region check
+            console.log('Player ready for region checking');
+        }, 2000); // 2 second delay to ensure chunks are loaded
     }
 
     update(deltaTime) {
@@ -71,8 +72,10 @@ export class Player {
                 // Update network position when we reach a tile
                 this.updateNetworkPosition();
 
-                // Check for region change
-                this.checkRegionChange();
+                // Check for region change if ready
+                if (this.regionCheckReady) {
+                    this.checkRegionChange();
+                }
 
                 // Continue to next tile in path if we have one
                 this.continueMovePath();
@@ -93,25 +96,42 @@ export class Player {
     }
 
     checkRegionChange() {
-        if (window.game && window.game.chunkSystem) {
-            const chunkX = Math.floor(this.x / window.game.chunkSystem.chunkSize);
-            const chunkY = Math.floor(this.y / window.game.chunkSystem.chunkSize);
-            const newRegion = window.game.chunkSystem.determineRegionType(chunkX, chunkY);
+        // Skip if not ready for region checking
+        if (!this.regionCheckReady) return;
+
+        // Make sure we have access to the game and chunk system
+        if (!window.game || !window.game.chunkSystem) {
+            console.warn('Cannot check region: game or chunk system not available');
+            return;
+        }
+
+        const chunkSystem = window.game.chunkSystem;
+        const chunkX = Math.floor(this.x / chunkSystem.chunkSize);
+        const chunkY = Math.floor(this.y / chunkSystem.chunkSize);
+
+        try {
+            const newRegion = chunkSystem.determineRegionType(chunkX, chunkY);
 
             // If region changed, play sound and notify
             if (newRegion !== this.currentRegion && this.currentRegion !== null) {
                 this.regionChangeSound.currentTime = 0;
                 this.regionChangeSound.play().catch(err => console.log("Sound play error:", err));
 
-                // Show notification
-                window.game.gameEngine.ui.showMessage(`Entering ${newRegion} region`, 2000);
+                // Show notification if UI is available
+                if (window.game.gameEngine && window.game.gameEngine.ui) {
+                    window.game.gameEngine.ui.showMessage(`Entering ${newRegion} region`, 2000);
+                }
 
                 // Update current region
                 this.currentRegion = newRegion;
+                console.log(`Region changed to: ${newRegion}`);
             } else if (this.currentRegion === null) {
                 // Set initial region without notification
                 this.currentRegion = newRegion;
+                console.log(`Initial region set to: ${newRegion}`);
             }
+        } catch (error) {
+            console.error("Error checking region change:", error);
         }
     }
 

@@ -33,6 +33,11 @@ class Game {
             // Initialize network and systems first
             await this.networkManager.initialize();
             await this.chunkSystem.initialize();
+            
+            // Explicitly trigger a chunk update to ensure chunks load
+            await this.chunkSystem.update(this.player.x, this.player.y);
+            console.log('Initial chunk update completed');
+            
             this.player.initialize(this.networkManager);
             this.ui.initialize(this.networkManager);
             
@@ -45,6 +50,12 @@ class Game {
             
             // Show welcome message
             this.gameEngine.ui.showMessage('Welcome to ChunkWorld Kingdom!', 3000);
+            
+            // Schedule a second chunk update after a short delay
+            setTimeout(async () => {
+                await this.chunkSystem.update(this.player.x, this.player.y);
+                console.log('Follow-up chunk update completed');
+            }, 1000);
         } catch (error) {
             console.error('Error initializing game:', error);
         }

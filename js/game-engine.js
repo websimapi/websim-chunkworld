@@ -14,6 +14,9 @@ export class GameEngine {
 
         // Create click indicator
         this.createClickIndicator();
+
+        // Debug settings
+        this.debugMode = false;
     }
 
     createClickIndicator() {
@@ -33,6 +36,11 @@ export class GameEngine {
         this.clickIndicator.active = true;
         this.clickIndicator.alpha = 1.0;
         this.clickIndicator.currentTime = 0;
+
+        // Debug log
+        if (this.debugMode) {
+            console.log(`Click indicator shown at (${worldX}, ${worldY})`);
+        }
     }
 
     start() {
@@ -40,6 +48,7 @@ export class GameEngine {
             this.isRunning = true;
             this.lastTime = performance.now();
             requestAnimationFrame(this.gameLoop.bind(this));
+            console.log('Game engine started');
         }
     }
 
@@ -101,8 +110,14 @@ export class GameEngine {
             this.renderClickIndicator(cameraX, cameraY);
         }
 
+        // Get visible chunks - debug log if none are loaded
+        const visibleChunks = this.chunkSystem.getVisibleChunks();
+        if (this.debugMode && visibleChunks.length === 0) {
+            console.warn('No visible chunks to render');
+        }
+
         // Render visible chunks
-        this.chunkSystem.getVisibleChunks().forEach(chunk => {
+        visibleChunks.forEach(chunk => {
             this.isometricRenderer.renderChunk(chunk, cameraX, cameraY);
         });
 
@@ -112,6 +127,29 @@ export class GameEngine {
         // Render other players
         this.networkManager.getOtherPlayers().forEach(otherPlayer => {
             this.isometricRenderer.renderPlayer(otherPlayer, cameraX, cameraY);
+        });
+
+        // Debug information
+        if (this.debugMode) {
+            this.renderDebugInfo();
+        }
+    }
+
+    renderDebugInfo() {
+        const info = [
+            `Player Position: (${this.player.x.toFixed(2)}, ${this.player.y.toFixed(2)})`,
+            `Chunk Coordinates: (${Math.floor(this.player.x / this.chunkSystem.chunkSize)}, ${Math.floor(this.player.y / this.chunkSystem.chunkSize)})`,
+            `Loaded Chunks: ${Object.keys(this.chunkSystem.chunks).length}`,
+            `Camera: (${(this.canvas.width / 2 - this.player.x * this.isometricRenderer.tileWidth / 2).toFixed(0)}, ${(this.canvas.height / 2 - this.player.y * this.isometricRenderer.tileHeight / 2).toFixed(0)})`
+        ];
+
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        this.ctx.fillRect(10, this.canvas.height - 100, 350, 90);
+
+        this.ctx.font = '14px Arial';
+        this.ctx.fillStyle = 'white';
+        info.forEach((text, index) => {
+            this.ctx.fillText(text, 20, this.canvas.height - 80 + index * 20);
         });
     }
 
@@ -174,5 +212,11 @@ export class GameEngine {
         if (this.isometricRenderer) {
             this.isometricRenderer.updateDimensions(this.canvas.width, this.canvas.height);
         }
+    }
+
+    // Toggle debug mode on/off
+    toggleDebugMode() {
+        this.debugMode = !this.debugMode;
+        console.log(`Debug mode ${this.debugMode ? 'enabled' : 'disabled'}`);
     }
 }

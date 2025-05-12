@@ -24,6 +24,9 @@ export class UI {
         
         // Setup kingdom info button
         this.createKingdomInfoButton();
+        
+        // Setup debug button
+        this.createDebugButton();
     }
     
     createCoordinateToggle() {
@@ -184,6 +187,60 @@ export class UI {
         
         instructions.appendChild(dismissButton);
         document.body.appendChild(instructions);
+    }
+    
+    createDebugButton() {
+        const debugButton = document.createElement('button');
+        debugButton.textContent = 'Debug Mode';
+        debugButton.style.position = 'absolute';
+        debugButton.style.top = '10px';
+        debugButton.style.left = '480px';
+        debugButton.style.padding = '5px 10px';
+        debugButton.style.backgroundColor = '#FF5722';
+        debugButton.style.color = 'white';
+        debugButton.style.border = 'none';
+        debugButton.style.borderRadius = '3px';
+        debugButton.style.cursor = 'pointer';
+        debugButton.style.zIndex = '100';
+        
+        debugButton.onclick = () => {
+            // Toggle debug mode in game engine
+            if (window.game && window.game.gameEngine) {
+                window.game.gameEngine.toggleDebugMode();
+                debugButton.style.backgroundColor = window.game.gameEngine.debugMode ? '#4CAF50' : '#FF5722';
+                
+                // Also perform reload check if debug is enabled
+                if (window.game.gameEngine.debugMode) {
+                    this.logGameState();
+                }
+            }
+        };
+        
+        document.body.appendChild(debugButton);
+    }
+    
+    logGameState() {
+        console.log('======= GAME STATE DEBUG INFO =======');
+        console.log('Game object exists:', !!window.game);
+        if (window.game) {
+            console.log('Game engine exists:', !!window.game.gameEngine);
+            console.log('Chunk system exists:', !!window.game.chunkSystem);
+            console.log('Player exists:', !!window.game.player);
+            console.log('Network manager exists:', !!window.game.networkManager);
+            
+            if (window.game.chunkSystem) {
+                console.log('Chunks loaded:', Object.keys(window.game.chunkSystem.chunks).length);
+                console.log('Chunk loading distance:', window.game.chunkSystem.loadDistance);
+                console.log('Kingdom center:', window.game.chunkSystem.kingdomCenter);
+            }
+            
+            if (window.game.player) {
+                console.log('Player position:', { x: window.game.player.x, y: window.game.player.y });
+                console.log('Current region:', window.game.player.currentRegion);
+                console.log('Is moving:', window.game.player.isMoving);
+            }
+        }
+        console.log('===================================');
     }
     
     update(player, chunkSystem) {

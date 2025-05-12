@@ -39,6 +39,10 @@ export class ChunkSystem {
 
         // Add additional colors to the isometric renderer
         this.extendIsometricRendererColors();
+
+        // Manually load chunks around start position to ensure the world loads
+        console.log('Pre-loading initial chunks...');
+        await this.loadChunksAroundPlayer(0, 0);
     }
 
     extendIsometricRendererColors() {
