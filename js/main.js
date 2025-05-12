@@ -21,6 +21,9 @@ class Game {
         
         window.addEventListener('resize', () => this.resize());
         
+        // Make game instance globally accessible
+        window.game = this;
+        
         this.initialize();
     }
     
@@ -30,15 +33,11 @@ class Game {
             await this.chunkSystem.initialize();
             this.player.initialize(this.networkManager);
             this.ui.initialize(this.networkManager);
-            
-            // Initialize input handler after the game engine is fully set up
-            this.inputHandler.initialize();
-            
-            // Make the game instance available globally for debugging
-            window.game = this;
-            
             this.gameEngine.start();
             console.log('Game initialized successfully!');
+            
+            // Show welcome message
+            this.gameEngine.ui.showMessage('Welcome to ChunkWorld Kingdom!', 3000);
         } catch (error) {
             console.error('Error initializing game:', error);
         }
@@ -56,5 +55,5 @@ class Game {
 
 // Start the game when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    window.game = new Game();
+    const game = new Game();
 });

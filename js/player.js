@@ -18,36 +18,47 @@ export class Player {
         this.clientId = null;
         this.lastStepTime = 0;
         this.stepSoundCooldown = 300; // ms
-        
-        // Load step sound
+        this.currentRegion = null;
+
+        // Load sounds
         this.stepSound = new Audio('assets/step.wav');
         this.stepSound.volume = 0.3;
+
+        this.regionChangeSound = new Audio('assets/region_change.wav');
+        this.regionChangeSound.volume = 0.5;
     }
-    
+
     initialize(networkManager) {
         this.networkManager = networkManager;
         this.clientId = this.networkManager.getClientId();
         this.username = this.networkManager.getUsername();
-        
+
         // Set a player color based on username (simple hash)
         this.color = this.getColorFromUsername(this.username);
-        
+
         // Set initial position to tile coordinates
         this.currentTileX = Math.round(this.x);
         this.currentTileY = Math.round(this.y);
         this.x = this.currentTileX;
         this.y = this.currentTileY;
-        
+
         // Update initial position to network
         this.updateNetworkPosition();
+
+        // Get initial region
+        if (window.game && window.game.chunkSystem) {
+            const chunkX = Math.floor(this.x / window.game.chunkSystem.chunkSize);
+            const chunkY = Math.floor(this.y / window.game.chunkSystem.chunkSize);
+            this.currentRegion = window.game.chunkSystem.determineRegionType(chunkX, chunkY);
+        }
     }
-    
+
     update(deltaTime) {
         // If we have a movement path, follow it tile by tile
         if (this.isMoving) {
             // Update move progress
             this.moveProgress += deltaTime * this.moveSpeed;
-            
+
             if (this.moveProgress >= 1) {
                 // We've reached the next tile
                 this.moveProgress = 0;
@@ -56,17 +67,20 @@ export class Player {
                 this.currentTileX = this.nextTileX;
                 this.currentTileY = this.nextTileY;
                 this.isMoving = false;
-                
+
                 // Update network position when we reach a tile
                 this.updateNetworkPosition();
-                
+
+                // Check for region change
+                this.checkRegionChange();
+
                 // Continue to next tile in path if we have one
                 this.continueMovePath();
             } else {
                 // Interpolate position between current and next tile
                 this.x = this.currentTileX + (this.nextTileX - this.currentTileX) * this.moveProgress;
                 this.y = this.currentTileY + (this.nextTileY - this.currentTileY) * this.moveProgress;
-                
+
                 // Play step sound with cooldown
                 const now = Date.now();
                 if (now - this.lastStepTime > this.stepSoundCooldown) {
@@ -77,41 +91,64 @@ export class Player {
             }
         }
     }
-    
+
+    checkRegionChange() {
+        if (window.game && window.game.chunkSystem) {
+            const chunkX = Math.floor(this.x / window.game.chunkSystem.chunkSize);
+            const chunkY = Math.floor(this.y / window.game.chunkSystem.chunkSize);
+            const newRegion = window.game.chunkSystem.determineRegionType(chunkX, chunkY);
+
+            // If region changed, play sound and notify
+            if (newRegion !== this.currentRegion && this.currentRegion !== null) {
+                this.regionChangeSound.currentTime = 0;
+                this.regionChangeSound.play().catch(err => console.log("Sound play error:", err));
+
+                // Show notification
+                window.game.gameEngine.ui.showMessage(`Entering ${newRegion} region`, 2000);
+
+                // Update current region
+                this.currentRegion = newRegion;
+            } else if (this.currentRegion === null) {
+                // Set initial region without notification
+                this.currentRegion = newRegion;
+            }
+        }
+    }
+
     setMovementTarget(targetX, targetY) {
         // If we're already moving to this target, do nothing
         if (this.targetX === targetX && this.targetY === targetY && this.isMoving) {
             return;
         }
-        
+
         this.targetX = targetX;
         this.targetY = targetY;
-        
+
         // Calculate path to target (simple direct path for now)
         this.calculatePath(targetX, targetY);
-        
+
         // Start moving along the path
         this.continueMovePath();
     }
-    
+
     calculatePath(targetX, targetY) {
         // Clear any existing path
         this.movePath = [];
-        
+
         // Get current position in tile coordinates
         const startX = Math.round(this.x);
         const startY = Math.round(this.y);
-        
+
         // Simple implementation: just add tiles in a straight line
         // In a more complex game, you'd use A* pathfinding
-        
+
         // Calculate Manhattan distance
         const dx = targetX - startX;
         const dy = targetY - startY;
-        
+
         // Create path by moving one tile at a time (horizontal first, then vertical)
         // This creates a simple L-shaped path
-        
+
         // Add horizontal steps
         const xDir = dx > 0 ? 1 : -1;
         for (let i = 0; i < Math.abs(dx); i++) {
@@ -120,7 +157,7 @@ export class Player {
                 y: startY
             });
         }
-        
+
         // Add vertical steps
         const yDir = dy > 0 ? 1 : -1;
         const endX = dx !== 0 ? targetX : startX;
@@ -130,11 +167,11 @@ export class Player {
                 y: startY + yDir * (i + 1)
             });
         }
-        
+
         // In a more advanced implementation, check for obstacles
         // and use proper pathfinding algorithm
     }
-    
+
     continueMovePath() {
         // If we have more tiles in the path, move to the next one
         if (this.movePath.length > 0) {
@@ -142,7 +179,7 @@ export class Player {
             this.moveToTile(nextTile.x, nextTile.y);
         }
     }
-    
+
     moveToTile(tileX, tileY) {
         // Set up movement to next tile
         this.currentTileX = Math.round(this.x);
@@ -152,36 +189,39 @@ export class Player {
         this.moveProgress = 0;
         this.isMoving = true;
     }
-    
+
     stopMovement() {
         this.isMoving = false;
         this.movePath = [];
         this.targetX = null;
         this.targetY = null;
         this.moveProgress = 0;
-        
+
         // Snap to nearest tile
         this.x = Math.round(this.x);
         this.y = Math.round(this.y);
         this.currentTileX = this.x;
         this.currentTileY = this.y;
-        
+
         this.updateNetworkPosition();
+
+        // Check for region change
+        this.checkRegionChange();
     }
-    
+
     updateNetworkPosition() {
         if (this.networkManager) {
             this.networkManager.updatePlayerPosition(this.x, this.y);
         }
     }
-    
+
     // Get a deterministic color based on username
     getColorFromUsername(username) {
         // Simple hash function to generate a color
         const hash = username.split('').reduce((acc, char) => {
             return acc + char.charCodeAt(0);
         }, 0);
-        
+
         // List of nice colors
         const colors = [
             '#F44336', // Red
@@ -200,10 +240,10 @@ export class Player {
             '#FF9800', // Orange
             '#FF5722'  // Deep Orange
         ];
-        
+
         return colors[hash % colors.length];
     }
-    
+
     // Apply changes from a network update
     applyNetworkUpdate(data) {
         // If we receive a position update from the network and we're not moving,
@@ -213,6 +253,9 @@ export class Player {
             this.y = data.y;
             this.currentTileX = Math.round(this.x);
             this.currentTileY = Math.round(this.y);
+
+            // Check for region change
+            this.checkRegionChange();
         }
     }
 }
