@@ -46,16 +46,22 @@ export class InputHandler {
     }
     
     screenToWorld(screenX, screenY) {
-        // Convert screen coordinates to isometric world coordinates using the player position as center
-        const cameraX = this.gameEngine.canvas.width / 2 - this.player.x * this.gameEngine.isometricRenderer.tileWidth / 2;
-        const cameraY = this.gameEngine.canvas.height / 2 - this.player.y * this.gameEngine.isometricRenderer.tileHeight / 2;
+        // Calculate the center of the screen
+        const centerX = this.gameEngine.canvas.width / 2;
+        const centerY = this.gameEngine.canvas.height / 2;
         
-        // Adjust screen coordinates to be relative to camera position
-        const adjustedX = screenX - cameraX;
-        const adjustedY = screenY - cameraY;
+        // Get screen offset from center
+        const offsetX = screenX - centerX;
+        const offsetY = screenY - centerY;
         
-        // Use the isometric renderer to convert to world coordinates
-        return this.gameEngine.isometricRenderer.isometricToCartesian(adjustedX, adjustedY);
+        // Convert screen offset to isometric world offset using the renderer
+        const worldOffset = this.gameEngine.isometricRenderer.isometricToCartesian(offsetX, offsetY);
+        
+        // Add the offset to player's position to get the clicked world position
+        return {
+            x: this.player.x + worldOffset.x,
+            y: this.player.y + worldOffset.y
+        };
     }
     
     setMovementTarget(x, y) {

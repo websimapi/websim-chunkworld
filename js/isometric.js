@@ -54,12 +54,13 @@ export class IsometricRenderer {
 
     // Convert isometric coordinates to 2D
     isometricToCartesian(x, y) {
-        const tileWidthHalf = this.tileWidth / 2;
-        const tileHeightHalf = this.tileHeight / 2;
+        // Formula to convert from isometric screen coordinates to cartesian world coordinates
+        const cartX = (2 * y + x) / this.tileWidth;
+        const cartY = (2 * y - x) / this.tileWidth;
 
         return {
-            x: (x / tileWidthHalf + y / tileHeightHalf) / 2,
-            y: (y / tileHeightHalf - x / tileWidthHalf) / 2
+            x: cartX,
+            y: cartY
         };
     }
 

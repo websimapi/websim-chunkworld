@@ -98,9 +98,11 @@ export class GameEngine {
         // Clear the canvas
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Always center camera on player position - simpler approach
-        const cameraX = this.canvas.width / 2 - this.player.x * this.isometricRenderer.tileWidth / 2;
-        const cameraY = this.canvas.height / 2 - this.player.y * this.isometricRenderer.tileHeight / 2;
+        // Calculate camera offset to center on player
+        // Use directly the isometric conversion for precise positioning
+        const iso = this.isometricRenderer.cartesianToIsometric(this.player.x, this.player.y);
+        const cameraX = this.canvas.width / 2 - iso.x;
+        const cameraY = this.canvas.height / 2 - iso.y;
 
         // Draw grid for better visibility of tiles
         this.renderGrid(cameraX, cameraY);
@@ -121,7 +123,7 @@ export class GameEngine {
             this.isometricRenderer.renderChunk(chunk, cameraX, cameraY);
         });
 
-        // Render player
+        // Render player at the center of the screen
         this.isometricRenderer.renderPlayer(this.player, cameraX, cameraY);
 
         // Render other players
@@ -140,16 +142,17 @@ export class GameEngine {
             `Player Position: (${this.player.x.toFixed(2)}, ${this.player.y.toFixed(2)})`,
             `Chunk Coordinates: (${Math.floor(this.player.x / this.chunkSystem.chunkSize)}, ${Math.floor(this.player.y / this.chunkSystem.chunkSize)})`,
             `Loaded Chunks: ${Object.keys(this.chunkSystem.chunks).length}`,
-            `Camera always centered on player`
+            `Camera centered on player`,
+            `Canvas Size: ${this.canvas.width}x${this.canvas.height}`
         ];
 
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        this.ctx.fillRect(10, this.canvas.height - 120, 350, 110);
+        this.ctx.fillRect(10, this.canvas.height - 150, 350, 140);
 
         this.ctx.font = '14px Arial';
         this.ctx.fillStyle = 'white';
         info.forEach((text, index) => {
-            this.ctx.fillText(text, 20, this.canvas.height - 100 + index * 20);
+            this.ctx.fillText(text, 20, this.canvas.height - 130 + index * 20);
         });
     }
 
