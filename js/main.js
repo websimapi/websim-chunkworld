@@ -15,8 +15,9 @@ class Game {
         this.networkManager = new NetworkManager();
         this.chunkSystem = new ChunkSystem(this.networkManager);
         this.player = new Player();
-        this.inputHandler = new InputHandler(this.player);
         this.gameEngine = new GameEngine(this.canvas, this.ctx, this.chunkSystem, this.player, this.networkManager, this.ui);
+        // Pass the gameEngine to the inputHandler
+        this.inputHandler = new InputHandler(this.player, this.gameEngine);
         
         window.addEventListener('resize', () => this.resize());
         
@@ -29,6 +30,13 @@ class Game {
             await this.chunkSystem.initialize();
             this.player.initialize(this.networkManager);
             this.ui.initialize(this.networkManager);
+            
+            // Initialize input handler after the game engine is fully set up
+            this.inputHandler.initialize();
+            
+            // Make the game instance available globally for debugging
+            window.game = this;
+            
             this.gameEngine.start();
             console.log('Game initialized successfully!');
         } catch (error) {
@@ -48,5 +56,5 @@ class Game {
 
 // Start the game when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    const game = new Game();
+    window.game = new Game();
 });

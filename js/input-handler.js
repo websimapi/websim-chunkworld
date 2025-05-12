@@ -1,151 +1,61 @@
 export class InputHandler {
-    constructor(player) {
+    constructor(player, gameEngine) {
         this.player = player;
+        this.gameEngine = gameEngine;
         this.keys = {};
-        this.touchStart = null;
-        this.touchOrigin = { x: 0, y: 0 };
-        this.isTouching = false;
-        this.joystickRadius = 50;
-        this.joystickElement = null;
-        
-        // Initialize input handlers
-        this.initKeyboardEvents();
-        this.initTouchEvents();
+        this.clickTarget = null;
+        this.tileSize = 1; // One unit in world coordinates
     }
-    
-    initKeyboardEvents() {
-        // Add keyboard event listeners
-        window.addEventListener('keydown', (e) => this.handleKeyDown(e));
-        window.addEventListener('keyup', (e) => this.handleKeyUp(e));
+
+    initialize() {
+        // Initialize input handlers after gameEngine is fully available
+        this.initMouseEvents();
     }
-    
-    initTouchEvents() {
-        // Create virtual joystick for touch devices
-        this.createVirtualJoystick();
-        
-        // Add touch event listeners
-        window.addEventListener('touchstart', (e) => this.handleTouchStart(e));
-        window.addEventListener('touchmove', (e) => this.handleTouchMove(e));
-        window.addEventListener('touchend', (e) => this.handleTouchEnd(e));
+
+    initMouseEvents() {
+        // Add mouse event listeners
+        this.gameEngine.canvas.addEventListener('click', (e) => this.handleClick(e));
+        this.gameEngine.canvas.style.cursor = 'pointer'; // Change cursor to indicate clickable
     }
-    
-    createVirtualJoystick() {
-        // Create joystick container
-        this.joystickContainer = document.createElement('div');
-        this.joystickContainer.style.position = 'absolute';
-        this.joystickContainer.style.bottom = '50px';
-        this.joystickContainer.style.left = '50px';
-        this.joystickContainer.style.width = `${this.joystickRadius * 2}px`;
-        this.joystickContainer.style.height = `${this.joystickRadius * 2}px`;
-        this.joystickContainer.style.borderRadius = '50%';
-        this.joystickContainer.style.backgroundColor = 'rgba(100, 100, 100, 0.5)';
-        this.joystickContainer.style.display = 'none';
-        this.joystickContainer.style.zIndex = '100';
-        this.joystickContainer.style.pointerEvents = 'none'; // Don't interfere with touch events
-        
-        // Create joystick knob
-        this.joystickKnob = document.createElement('div');
-        this.joystickKnob.style.position = 'absolute';
-        this.joystickKnob.style.top = '50%';
-        this.joystickKnob.style.left = '50%';
-        this.joystickKnob.style.transform = 'translate(-50%, -50%)';
-        this.joystickKnob.style.width = '40px';
-        this.joystickKnob.style.height = '40px';
-        this.joystickKnob.style.borderRadius = '50%';
-        this.joystickKnob.style.backgroundColor = 'rgba(200, 200, 200, 0.8)';
-        
-        this.joystickContainer.appendChild(this.joystickKnob);
-        document.body.appendChild(this.joystickContainer);
+
+    handleClick(e) {
+        // Get click coordinates relative to canvas
+        const rect = this.gameEngine.canvas.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+
+        // Convert screen coordinates to world coordinates
+        const worldPos = this.screenToWorld(clickX, clickY);
+
+        // Round to nearest tile
+        const tileX = Math.round(worldPos.x);
+        const tileY = Math.round(worldPos.y);
+
+        // Show click indicator
+        this.gameEngine.showClickAt(tileX, tileY);
+
+        // Set as movement target
+        this.setMovementTarget(tileX, tileY);
     }
-    
-    handleKeyDown(e) {
-        this.keys[e.code] = true;
-        this.updatePlayerDirection();
+
+    screenToWorld(screenX, screenY) {
+        // Convert screen coordinates to isometric world coordinates
+        const cameraX = this.gameEngine.canvas.width / 2 - this.player.x * this.gameEngine.isometricRenderer.tileWidth / 2;
+        const cameraY = this.gameEngine.canvas.height / 2 - this.player.y * this.gameEngine.isometricRenderer.tileHeight / 2;
+
+        // Adjust screen coordinates to be relative to camera position
+        const adjustedX = screenX - cameraX;
+        const adjustedY = screenY - cameraY;
+
+        // Use the isometric renderer to convert to world coordinates
+        return this.gameEngine.isometricRenderer.isometricToCartesian(adjustedX, adjustedY);
     }
-    
-    handleKeyUp(e) {
-        this.keys[e.code] = false;
-        this.updatePlayerDirection();
-    }
-    
-    handleTouchStart(e) {
-        const touch = e.touches[0];
-        this.isTouching = true;
-        
-        // Store the touch start position
-        this.touchStart = {
-            x: touch.clientX,
-            y: touch.clientY
-        };
-        
-        // Set joystick position to touch position
-        this.touchOrigin = {
-            x: touch.clientX,
-            y: touch.clientY
-        };
-        
-        // Show and position joystick
-        this.joystickContainer.style.display = 'block';
-        this.joystickContainer.style.left = `${this.touchOrigin.x - this.joystickRadius}px`;
-        this.joystickContainer.style.top = `${this.touchOrigin.y - this.joystickRadius}px`;
-        this.joystickKnob.style.left = '50%';
-        this.joystickKnob.style.top = '50%';
-    }
-    
-    handleTouchMove(e) {
-        if (!this.isTouching) return;
-        
-        // Prevent scrolling
-        e.preventDefault();
-        
-        const touch = e.touches[0];
-        
-        // Calculate joystick direction
-        const dx = touch.clientX - this.touchOrigin.x;
-        const dy = touch.clientY - this.touchOrigin.y;
-        
-        // Calculate magnitude of joystick movement
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const angle = Math.atan2(dy, dx);
-        
-        // Limit joystick movement to radius
-        const clampedDistance = Math.min(distance, this.joystickRadius);
-        const knobX = clampedDistance * Math.cos(angle);
-        const knobY = clampedDistance * Math.sin(angle);
-        
-        // Update joystick knob position
-        this.joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
-        
-        // Update player direction
-        if (distance > 10) { // small deadzone
-            this.player.setDirection(
-                knobX / this.joystickRadius,
-                knobY / this.joystickRadius
-            );
-        } else {
-            this.player.setDirection(0, 0);
-        }
-    }
-    
-    handleTouchEnd(e) {
-        this.isTouching = false;
-        this.touchStart = null;
-        this.player.setDirection(0, 0);
-        
-        // Hide joystick
-        this.joystickContainer.style.display = 'none';
-    }
-    
-    updatePlayerDirection() {
-        // Calculate direction based on WASD or arrow keys
-        let dirX = 0;
-        let dirY = 0;
-        
-        if (this.keys['KeyW'] || this.keys['ArrowUp']) dirY -= 1;
-        if (this.keys['KeyS'] || this.keys['ArrowDown']) dirY += 1;
-        if (this.keys['KeyA'] || this.keys['ArrowLeft']) dirX -= 1;
-        if (this.keys['KeyD'] || this.keys['ArrowRight']) dirX += 1;
-        
-        this.player.setDirection(dirX, dirY);
+
+    setMovementTarget(x, y) {
+        // Set the target for the player to move to
+        this.player.setMovementTarget(x, y);
+
+        // Visual feedback for click
+        this.gameEngine.ui.showMessage(`Moving to (${x}, ${y})`, 1000);
     }
 }

@@ -32,10 +32,11 @@ export class UI {
         instructions.style.borderRadius = '5px';
         instructions.style.fontSize = '14px';
         instructions.style.maxWidth = '300px';
+        instructions.style.zIndex = '100';
         instructions.innerHTML = `
             <h3 style="margin-bottom: 5px;">Controls:</h3>
-            <p>WASD or Arrow Keys: Move</p>
-            <p>On mobile: Virtual joystick</p>
+            <p>Click on a tile to move there</p>
+            <p>Your character will move one tile at a time</p>
             <p>The world is automatically saved</p>
         `;
         

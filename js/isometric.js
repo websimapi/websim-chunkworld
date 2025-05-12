@@ -95,6 +95,12 @@ export class IsometricRenderer {
             this.ctx.fill();
             this.ctx.stroke();
         }
+        
+        // Debug: Draw tile coordinates
+        this.ctx.font = '10px Arial';
+        this.ctx.fillStyle = '#FFF';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(`${x},${y}`, screenX, screenY + this.tileHeight / 2);
     }
     
     renderChunk(chunk, cameraX, cameraY) {
@@ -139,6 +145,38 @@ export class IsometricRenderer {
             this.ctx.textAlign = 'center';
             this.ctx.fillText(player.username, screenX, screenY - 35);
         }
+        
+        // Draw movement path indicator if the player is moving
+        if (player.movePath && player.movePath.length > 0 && player === window.game?.player) {
+            this.renderMovementPath(player, cameraX, cameraY);
+        }
+    }
+    
+    renderMovementPath(player, cameraX, cameraY) {
+        // Draw the remaining path
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        this.ctx.lineWidth = 2;
+        this.ctx.setLineDash([5, 5]);
+        this.ctx.beginPath();
+        
+        // Start from current position
+        const startIso = this.cartesianToIsometric(player.x, player.y);
+        this.ctx.moveTo(startIso.x + cameraX, startIso.y + cameraY);
+        
+        // If player is moving between tiles, draw line to next tile
+        if (player.isMoving) {
+            const nextIso = this.cartesianToIsometric(player.nextTileX, player.nextTileY);
+            this.ctx.lineTo(nextIso.x + cameraX, nextIso.y + cameraY);
+        }
+        
+        // Draw lines to all future path points
+        player.movePath.forEach(point => {
+            const iso = this.cartesianToIsometric(point.x, point.y);
+            this.ctx.lineTo(iso.x + cameraX, iso.y + cameraY);
+        });
+        
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
     }
     
     // Helper function to darken a color for side faces
